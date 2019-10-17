@@ -45,11 +45,34 @@ node {
                                     builds.untilEach {
                                         return it.object().status.phase == "Complete"
                                     }
-                        }
+                            }
                         }
                     }
 
              }
+        }
+
+        stage('Promote to DEV') {
+                openshift.withCluster() {
+                    openshift.tag("blackboxexporter:latest", "blackboxexporter:dev")
+                }
+            }
+        stage('Create DEV') {
+            openshift.withCluster() {
+                openshift.withProject("${DEV_NAMESPACE}") {
+                                def blackboxdcSelector = openshift.selector("dc", "blackboxexporter")
+                                try {
+                                    blackboxdcSelector.object()
+                                    deploymentconfig = blackboxdcSelector.related( "deploymentconfig" )
+                                } catch (Throwable t) {
+                                    na = openshift.newApp("${TOOLS_NAMESPACE}/blackboxexporter:dev", "--name=blackboxexporter").narrow('svc').expose()
+
+                                    // Print out information about the objects created by newBuild
+                                     echo "newApp created: ${na.count()} objects : ${na.names()}"
+
+                                }
+                }
+            }
         }
     }
 
