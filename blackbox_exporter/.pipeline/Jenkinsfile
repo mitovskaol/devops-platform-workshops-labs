@@ -68,7 +68,7 @@ node {
                                     na = openshift.newApp("${TOOLS_NAMESPACE}/blackboxexporter:dev", "--name=blackboxexporter").narrow('svc').expose()
 
                                     // Print out information about the objects created by newBuild
-                                     echo "newApp created: ${na.count()} objects : ${na.names()}"
+                                    // echo "newApp created: ${na.count()} objects : ${na.names()}"
 
                                 }
                 }
