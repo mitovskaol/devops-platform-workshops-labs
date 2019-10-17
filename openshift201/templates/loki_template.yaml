@@ -65,7 +65,9 @@ objects:
       labels:
         app: ${LOKI_SERVICE_NAME}
       annotations:
-        {}
+        our-awesome-metadata: "nothing to see here"
+        prometheus.io/port: http-metrics
+        prometheus.io/scrape: "true"
     spec:
       replicas: 1
       minReadySeconds: 0
@@ -78,10 +80,6 @@ objects:
         metadata:
           labels:
             app: ${LOKI_SERVICE_NAME}
-          annotations:
-            our-awesome-metadata: "nothing to see here"
-            prometheus.io/port: http-metrics
-            prometheus.io/scrape: "true"
         spec:
           serviceAccountName: default 
 parameters:
