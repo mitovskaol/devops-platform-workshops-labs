@@ -16,7 +16,7 @@ node {
                     timeout (time: 180, unit: 'SECONDS'){
                         openshift.withCluster() {
                         openshift.withProject("${DEV_NAMESPACE}") {
-                            def dc = openshift.selector('deployment', "${LOKI_SERVICE}")
+                            def dc = openshift.selector('statefulset', "${LOKI_SERVICE}")
                             // this will wait until the desired replicas are available
                             dc.rollout().status()
                         }
