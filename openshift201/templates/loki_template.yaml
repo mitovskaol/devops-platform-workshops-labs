@@ -81,7 +81,41 @@ objects:
           labels:
             app: ${LOKI_SERVICE_NAME}
         spec:
-          serviceAccountName: default 
+          serviceAccountName: default    
+        containers:
+          - name: loki
+            image: "grafana/loki:v0.3.0"
+            imagePullPolicy: IfNotPresent
+            args:
+              - "-config.file=/etc/loki/loki.yaml"
+            volumeMounts:
+              - name: config
+                mountPath: /etc/loki
+              - name: storage
+                mountPath: "/data"
+                subPath: 
+            ports:
+              - name: http-metrics
+                containerPort: 3100
+                protocol: TCP
+            livenessProbe:
+              httpGet:
+                path: /ready
+                port: http-metrics
+              initialDelaySeconds: 45
+              
+            readinessProbe:
+              httpGet:
+                path: /ready
+                port: http-metrics
+              initialDelaySeconds: 45
+              
+            resources:
+              {}
+              
+            securityContext:
+              readOnlyRootFilesystem: true
+            env:
 parameters:
 - description: The name of the OpenShift Service exposed for the database.
   displayName: Loki Service Name
