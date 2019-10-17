@@ -90,4 +90,7 @@ parameters:
   name: LOKI_SERVICE_NAME
   required: true
   value: loki
-
+- description: The namespace this templated is deployed into.
+  displayName: Namespace
+  name: NAMESPACE
+  value: openshift
