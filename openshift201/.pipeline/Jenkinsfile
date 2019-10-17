@@ -1,0 +1,18 @@
+#!/usr/bin/env groovy
+
+//ENV Vars
+def TOOLS_NAMESPACE = "4zq6uj-mitovskaol-ocp201-tst-tools"
+def DEV_NAMESPACE = "4zq6uj-mitovskaol-ocp201-tst-dev"
+def PROD_NAMESPACE = "4zq6uj-mitovskaol-ocp201-tst-prod"
+
+
+//Pipeline
+node {
+            stage ('Build Stage'){
+                dir ('simple_pipeline') {
+                    checkout scm
+                    sh "echo HELLO WORLD! "
+                    sh "ls -lha openshift201/templates"
+                }
+            }
+    }
