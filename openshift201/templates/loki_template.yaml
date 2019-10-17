@@ -185,3 +185,13 @@ objects:
         heritage: Tiller
         release: ${LOKI_SERVICE_NAME}
       name: ${LOKI_SERVICE_NAME}
+parameters:
+- description: The name of the Loki service to connect to.
+  displayName: Loki Service Name
+  name: LOKI_SERVICE_NAME
+  required: true
+  value: loki
+- description: The namespace this templated is deployed into.
+  displayName: Namespace
+  name: NAMESPACE
+  value: openshift
