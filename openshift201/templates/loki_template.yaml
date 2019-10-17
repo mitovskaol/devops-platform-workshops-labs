@@ -7,7 +7,7 @@ objects:
     kind: Secret
     metadata:
       name: ${LOKI_SERVICE_NAME}
-      namespace: 4zq6uj-mitovskaol-ocp201-tst-dev
+      namespace: ${NAMESPACE}
       labels:
         app: loki
         chart: loki-0.16.0
@@ -19,7 +19,7 @@ objects:
     kind: Service
     metadata:
       name: ${LOKI_SERVICE_NAME}-headless
-      namespace: 4zq6uj-mitovskaol-ocp201-tst-dev
+      namespace: ${NAMESPACE}
       labels:
         app: loki
         chart: loki-0.16.0
@@ -39,7 +39,7 @@ objects:
     kind: Service
     metadata:
       name: ${LOKI_SERVICE_NAME}
-      namespace: 4zq6uj-mitovskaol-ocp201-tst-dev
+      namespace: ${NAMESPACE}
       labels:
         app: loki
         chart: loki-0.16.0
@@ -61,89 +61,29 @@ objects:
     kind: StatefulSet
     metadata:
       name: ${LOKI_SERVICE_NAME}
-      namespace: 4zq6uj-mitovskaol-ocp201-tst-dev
+      namespace: ${NAMESPACE}
       labels:
-        app: loki
-        chart: loki-0.16.0
-        release: ${LOKI_SERVICE_NAME}
-        heritage: Tiller
+        app: ${LOKI_SERVICE_NAME}
       annotations:
         {}
     spec:
-      podManagementPolicy: OrderedReady
       replicas: 1
+      minReadySeconds: 0
       selector:
         matchLabels:
-          app: loki
-          release: ${LOKI_SERVICE_NAME}
-      serviceName: ${LOKI_SERVICE_NAME}-headless
+          app: ${LOKI_SERVICE_NAME}
       updateStrategy:
-        type: RollingUpdate
-        
+        type: RollingUpdate       
       template:
         metadata:
           labels:
-            app: loki
-            name: loki
-            release: ${LOKI_SERVICE_NAME}
+            app: ${LOKI_SERVICE_NAME}
           annotations:
-            checksum/config: b12d4c9894e82c9ae072913bbcf47c4e47cfaaab304e053f810801da4a76655e
+            our-awesome-metadata: "nothing to see here"
             prometheus.io/port: http-metrics
             prometheus.io/scrape: "true"
-            
         spec:
-          serviceAccountName: default
-            
-          containers:
-            - name: loki
-              image: "grafana/loki:v0.3.0"
-              imagePullPolicy: IfNotPresent
-              args:
-                - "-config.file=/etc/loki/loki.yaml"
-              volumeMounts:
-                - name: config
-                  mountPath: /etc/loki
-                - name: storage
-                  mountPath: "/data"
-                  subPath: 
-              ports:
-                - name: http-metrics
-                  containerPort: 3100
-                  protocol: TCP
-              livenessProbe:
-                httpGet:
-                  path: /ready
-                  port: http-metrics
-                initialDelaySeconds: 45
-                
-              readinessProbe:
-                httpGet:
-                  path: /ready
-                  port: http-metrics
-                initialDelaySeconds: 45
-                
-              resources:
-                {}
-                
-              securityContext:
-                readOnlyRootFilesystem: true
-              env:
-          nodeSelector:
-            {}
-            
-          affinity:
-            {}
-            
-          tolerations:
-            []
-            
-          terminationGracePeriodSeconds: 30
-          volumes:
-            - name: config
-              secret:
-                secretName: ${LOKI_SERVICE_NAME}
-            - name: storage
-              emptyDir: {}
+          serviceAccountName: default 
 parameters:
 - description: The name of the OpenShift Service exposed for the database.
   displayName: Loki Service Name
