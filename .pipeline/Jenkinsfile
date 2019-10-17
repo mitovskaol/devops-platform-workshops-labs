@@ -1,0 +1,85 @@
+#!/usr/bin/env groovy
+
+//ENV Vars
+def TOOLS_NAMESPACE = "4zq6uj-mitovskaol-ocp201-tst-tools"
+def DEV_NAMESPACE = "4zq6uj-mitovskaol-ocp201-tst-dev"
+def PROD_NAMESPACE = "4zq6uj-mitovskaol-ocp201-tst-prod"
+
+
+//Pipeline
+node {
+    stage ('Buld Blackbox in Tools Namespace'){
+                dir ('simple_pipeline') {
+                    checkout scm
+                    timeout (time: 600, unit: 'SECONDS'){
+                        openshift.withCluster() {
+                        openshift.withProject("${TOOLS_NAMESPACE}") {
+                                def blackboxSelector = openshift.selector("bc", "blackboxexporter")
+                                try {
+                                    blackboxSelector.object()
+                                    builds = blackboxSelector.related( "builds" )
+                                } catch (Throwable t) {
+                                    nb = openshift.newBuild( "https://github.com/mitovskaol/devops-platform-workshops-labs.git#mitovskaol-201", "--context-dir=blackbox_exporter", "--name=blackboxexporter" )
+
+                                    // Print out information about the objects created by newBuild
+                                    echo "newBuild created: ${nb.count()} objects : ${nb.names()}"
+
+                                    // Filter non-BuildConfig objects and create selector which will find builds related to the BuildConfig
+                                    builds = nb.narrow("bc").related( "builds" )
+                                }
+                                    openshift.selector("bc", "blackboxexporter").startBuild("--wait")
+                                    builds.watch {
+                                    // 'it' is bound to the builds selector.
+                                    // Continue to watch until at least one build is detected
+                                    if ( it.count() == 0 ) {
+                                        return false
+                                    }
+                                    // Print out the build's name and terminate the watch
+                                    echo "Detected new builds created by buildconfig: ${it.names()}"
+                                    return true
+                                    }
+
+                                    echo "Waiting for builds to complete..."
+
+                                    // Like a watch, but only terminate when at least one selected object meets condition
+                                    builds.untilEach {
+                                        return it.object().status.phase == "Complete"
+                                    }
+                            }
+                        }
+                    }
+
+             }
+        }
+
+    stage('Promote Blackbox to DEV') {
+                openshift.withCluster() {
+                    openshift.tag("blackboxexporter:latest", "blackboxexporter:dev")
+                }
+            }
+
+    stage('Deploy Blackbox and Loki to DEV'){
+                parallel (
+                    'deploy blackbox test': {
+                        openshift.withCluster() {
+                        openshift.withProject("${DEV_NAMESPACE}") {
+                            def blackboxdcSelector = openshift.selector("dc", "blackboxexporter")
+                            try {
+                                blackboxdcSelector.object()
+                                deploymentconfig = blackboxdcSelector.related( "deploymentconfig" )
+                            } catch (Throwable t) {
+                                na = openshift.newApp("${TOOLS_NAMESPACE}/blackboxexporter:dev", "--name=blackboxexporter").narrow('svc').expose()
+
+                                // Print out information about the objects created by newBuild
+                                // echo "newApp created: ${na.count()} objects : ${na.names()}"
+
+                            }
+                          }
+                        }
+                    },
+                    'security test': {
+                        sh "echo security test"
+                    }
+                )
+
+            }
