@@ -58,28 +58,6 @@ node {
                 }
             }
 
-    stage('Deploy Blackbox and Loki to DEV'){
-                parallel (
-                    'deploy blackbox test': {
-                        openshift.withCluster() {
-                        openshift.withProject("${DEV_NAMESPACE}") {
-                            def blackboxdcSelector = openshift.selector("dc", "blackboxexporter")
-                            try {
-                                blackboxdcSelector.object()
-                                deploymentconfig = blackboxdcSelector.related( "deploymentconfig" )
-                            } catch (Throwable t) {
-                                na = openshift.newApp("${TOOLS_NAMESPACE}/blackboxexporter:dev", "--name=blackboxexporter").narrow('svc').expose()
-
-                                // Print out information about the objects created by newBuild
-                                // echo "newApp created: ${na.count()} objects : ${na.names()}"
-
-                            }
-                          }
-                        }
-                    },
-                    'security test': {
-                        sh "echo security test"
-                    }
-            }
+  
 
 }
