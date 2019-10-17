@@ -1,144 +1,187 @@
-kind: Template
 apiVersion: v1
-labels:
-  template: loki-template
+kind: Template
+metadata:
+  name: loki-template
+parameters:
+  - name: NAME
+    value: loki
 objects:
   - apiVersion: v1
+    stringData:
+      loki.yaml: |-
+        auth_enabled: false
+        chunk_store_config:
+          max_look_back_period: 0
+        ingester:
+          chunk_block_size: 262144
+          chunk_idle_period: 3m
+          chunk_retain_period: 1m
+          lifecycler:
+            ring:
+              kvstore:
+                store: inmemory
+              replication_factor: 1
+        limits_config:
+          enforce_metric_name: false
+          reject_old_samples: true
+          reject_old_samples_max_age: 168h
+        schema_config:
+          configs:
+          - from: 2018-04-15
+            index:
+              period: 168h
+              prefix: index_
+            object_store: filesystem
+            schema: v9
+            store: boltdb
+        server:
+          http_listen_port: 3100
+        storage_config:
+          boltdb:
+            directory: /data/loki/index
+          filesystem:
+            directory: /data/loki/chunks
+        table_manager:
+          retention_deletes_enabled: false
+          retention_period: 0
     kind: Secret
+    type: Opaque
     metadata:
-      name: ${LOKI_SERVICE_NAME}
-      namespace: ${NAMESPACE}
-      labels:
-        app: loki
-        chart: loki-0.16.0
-        release: ${LOKI_SERVICE_NAME}
-        heritage: Tiller
-    data:
-      loki.yaml: YXV0aF9lbmFibGVkOiBmYWxzZQpjaHVua19zdG9yZV9jb25maWc6CiAgbWF4X2xvb2tfYmFja19wZXJpb2Q6IDAKaW5nZXN0ZXI6CiAgY2h1bmtfYmxvY2tfc2l6ZTogMjYyMTQ0CiAgY2h1bmtfaWRsZV9wZXJpb2Q6IDNtCiAgY2h1bmtfcmV0YWluX3BlcmlvZDogMW0KICBsaWZlY3ljbGVyOgogICAgcmluZzoKICAgICAga3ZzdG9yZToKICAgICAgICBzdG9yZTogaW5tZW1vcnkKICAgICAgcmVwbGljYXRpb25fZmFjdG9yOiAxCmxpbWl0c19jb25maWc6CiAgZW5mb3JjZV9tZXRyaWNfbmFtZTogZmFsc2UKICByZWplY3Rfb2xkX3NhbXBsZXM6IHRydWUKICByZWplY3Rfb2xkX3NhbXBsZXNfbWF4X2FnZTogMTY4aApzY2hlbWFfY29uZmlnOgogIGNvbmZpZ3M6CiAgLSBmcm9tOiAiMjAxOC0wNC0xNSIKICAgIGluZGV4OgogICAgICBwZXJpb2Q6IDE2OGgKICAgICAgcHJlZml4OiBpbmRleF8KICAgIG9iamVjdF9zdG9yZTogZmlsZXN5c3RlbQogICAgc2NoZW1hOiB2OQogICAgc3RvcmU6IGJvbHRkYgpzZXJ2ZXI6CiAgaHR0cF9saXN0ZW5fcG9ydDogMzEwMApzdG9yYWdlX2NvbmZpZzoKICBib2x0ZGI6CiAgICBkaXJlY3Rvcnk6IC9kYXRhL2xva2kvaW5kZXgKICBmaWxlc3lzdGVtOgogICAgZGlyZWN0b3J5OiAvZGF0YS9sb2tpL2NodW5rcwp0YWJsZV9tYW5hZ2VyOgogIHJldGVudGlvbl9kZWxldGVzX2VuYWJsZWQ6IGZhbHNlCiAgcmV0ZW50aW9uX3BlcmlvZDogMAo=
-  - apiVersion: v1
-    kind: Service
-    metadata:
-      name: ${LOKI_SERVICE_NAME}-headless
-      namespace: ${NAMESPACE}
-      labels:
-        app: loki
-        chart: loki-0.16.0
-        release: ${LOKI_SERVICE_NAME}
-        heritage: Tiller
-    spec:
-      clusterIP: None
-      ports:
-        - port: 3100
-          protocol: TCP
-          name: http-metrics
-          targetPort: http-metrics
-      selector:
-        app: loki
-        release: ${LOKI_SERVICE_NAME}
-  - apiVersion: v1
-    kind: Service
-    metadata:
-      name: ${LOKI_SERVICE_NAME}
-      namespace: ${NAMESPACE}
-      labels:
-        app: loki
-        chart: loki-0.16.0
-        release: ${LOKI_SERVICE_NAME}
-        heritage: Tiller
-      annotations:
-        {}
-    spec:
-      type: ClusterIP
-      ports:
-        - port: 3100
-          protocol: TCP
-          name: http-metrics
-          targetPort: http-metrics
-      selector:
-        app: loki
-        release: ${LOKI_SERVICE_NAME}
-  - apiVersion: apps/v1
-    kind: StatefulSet
-    metadata:
-      name: ${LOKI_SERVICE_NAME}
-      namespace: ${NAMESPACE}
+      annotations: {}
       labels:
         app: ${LOKI_SERVICE_NAME}
-      annotations:
-        our-awesome-metadata: "nothing to see here"
-        prometheus.io/port: http-metrics
-        prometheus.io/scrape: "true"
+        chart: loki-0.16.0
+        heritage: Tiller
+        release: ${LOKI_SERVICE_NAME}
+      name: ${LOKI_SERVICE_NAME}
+  - apiVersion: v1
+    kind: Service
     spec:
+      ports:
+        - name: http-metrics
+          port: 3100
+          protocol: TCP
+          targetPort: http-metrics
+      selector:
+        app: ${LOKI_SERVICE_NAME}
+        release: ${LOKI_SERVICE_NAME}
+      sessionAffinity: None
+      type: ClusterIP
+    metadata:
+      annotations: {}
+      labels:
+        app: ${LOKI_SERVICE_NAME}
+        chart: loki-0.16.0
+        heritage: Tiller
+        release: ${LOKI_SERVICE_NAME}
+      name: ${LOKI_SERVICE_NAME}-headless
+  - apiVersion: v1
+    kind: Service
+    spec:
+      ports:
+        - name: http-metrics
+          port: 3100
+          protocol: TCP
+          targetPort: http-metrics
+      selector:
+        app: ${LOKI_SERVICE_NAME}
+        release: ${LOKI_SERVICE_NAME}
+      sessionAffinity: None
+      type: ClusterIP
+    metadata:
+      annotations: {}
+      labels:
+        app: ${LOKI_SERVICE_NAME}
+        chart: loki-0.16.0
+        heritage: Tiller
+        release: ${LOKI_SERVICE_NAME}
+      name: ${LOKI_SERVICE_NAME}
+  - apiVersion: apps/v1
+    kind: StatefulSet
+    spec:
+      podManagementPolicy: OrderedReady
       replicas: 1
-      minReadySeconds: 0
+      revisionHistoryLimit: 10
       selector:
         matchLabels:
           app: ${LOKI_SERVICE_NAME}
-      updateStrategy:
-        type: RollingUpdate       
+          release: ${LOKI_SERVICE_NAME}
+      serviceName: ${LOKI_SERVICE_NAME}-headless
       template:
         metadata:
+          annotations:
+            checksum/config: 1a1db42c74b23fa57b31058016b0d6d279b0bd0dc39493d37569d18455c4e60d
+            prometheus.io/port: http-metrics
+            prometheus.io/scrape: 'true'
+          creationTimestamp: null
           labels:
             app: ${LOKI_SERVICE_NAME}
+            name: loki
+            release: ${LOKI_SERVICE_NAME}
         spec:
-            serviceAccountName: default    
-            containers:
-            - name: loki
-              image: "grafana/loki:v0.3.0"
+          affinity: {}
+          containers:
+            - args:
+                - '-config.file=/etc/loki/loki.yaml'
+              image: 'grafana/loki:v0.3.0'
               imagePullPolicy: IfNotPresent
-              args:
-                - "-config.file=/etc/loki/loki.yaml"
-              volumeMounts:
-                - name: config
-                  mountPath: /etc/loki
-                - name: storage
-                  mountPath: "/data"
-                  subPath: 
-              ports:
-                - name: http-metrics
-                  containerPort: 3100
-                  protocol: TCP
               livenessProbe:
+                failureThreshold: 3
                 httpGet:
                   path: /ready
                   port: http-metrics
+                  scheme: HTTP
                 initialDelaySeconds: 45
-
+                periodSeconds: 10
+                successThreshold: 1
+                timeoutSeconds: 1
+              name: loki
+              ports:
+                - containerPort: 3100
+                  name: http-metrics
+                  protocol: TCP
               readinessProbe:
+                failureThreshold: 3
                 httpGet:
                   path: /ready
                   port: http-metrics
+                  scheme: HTTP
                 initialDelaySeconds: 45
-
-              resources:
-                {}
-
+                periodSeconds: 10
+                successThreshold: 1
+                timeoutSeconds: 1
+              resources: {}
               securityContext:
                 readOnlyRootFilesystem: true
-              env:
-          nodeSelector:
-            {}
-
-          affinity:
-            {}
-
-          tolerations:
-            []
-
+              terminationMessagePath: /dev/termination-log
+              terminationMessagePolicy: File
+              volumeMounts:
+                - mountPath: /etc/loki
+                  name: config
+                - mountPath: /data
+                  name: storage
+          dnsPolicy: ClusterFirst
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          securityContext: {}
+          serviceAccount: default
+          serviceAccountName: default
           terminationGracePeriodSeconds: 30
           volumes:
             - name: config
               secret:
+                defaultMode: 420
                 secretName: ${LOKI_SERVICE_NAME}
-            - name: storage
-              emptyDir: {}
-parameters:
-- description: The name of the OpenShift Service exposed for the database.
-  displayName: Loki Service Name
-  name: LOKI_SERVICE_NAME
-  required: true
-  value: loki
-- description: The namespace this templated is deployed into.
-  displayName: Namespace
-  name: NAMESPACE
-  value: openshift
+            - emptyDir: {}
+              name: storage
+      updateStrategy:
+        type: RollingUpdate
+    metadata:
+      annotations: {}
+      generation: 2
+      labels:
+        app: ${LOKI_SERVICE_NAME}
+        chart: loki-0.16.0
+        heritage: Tiller
+        release: ${LOKI_SERVICE_NAME}
+      name: ${LOKI_SERVICE_NAME}
